@@ -166,5 +166,14 @@ export const PRACTICE_MODES = Object.freeze([
     subtitle: 'Sockets, RMI, REST and JMS',
     summary: 'Reconstruct the control and data flow of the communication technologies from the lecture.',
     kind: 'sequence'
+  },
+  {
+    id: 'exam-mode',
+    navTitle: 'Exam Mode',
+    category: 'Exam',
+    title: 'Exam Mode',
+    subtitle: 'Theory, Java code, HTTP and XML/DTD',
+    summary: 'Complete a mixed paper-style exam without immediate feedback, then review every answer with a model explanation.',
+    kind: 'exam'
   }
 ].map(mode => Object.freeze({ ...mode })));
