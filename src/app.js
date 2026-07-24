@@ -1,12 +1,15 @@
 import { APP_RELEASE_NAME, APP_VERSION, DEFAULT_TOPIC_ID, STORAGE_KEY } from './config.js';
+import { PRACTICE_MODES } from './content/practice.js';
 import { TOPICS } from './content/topics.js';
 import { createTopicRegistry } from './core/topic-registry.js';
+import { PRACTICE_RENDERERS } from './games/practice-games.js';
 
 export function createApp(document, window) {
   const $ = selector => document.querySelector(selector);
   const registry = createTopicRegistry(TOPICS);
-  const defaultProgress = { visited: [], mastered: [] };
+  const defaultProgress = { visited: [], mastered: [], completedPractice: [] };
   let currentTopicId = DEFAULT_TOPIC_ID;
+  let currentPracticeId = null;
   let progress = loadProgress();
 
   function loadProgress() {
@@ -33,6 +36,10 @@ export function createApp(document, window) {
   }
 
   function renderNavigation() {
+    const practiceButtons = PRACTICE_MODES.map(mode => `
+      <button class="algo-btn ${mode.id === currentPracticeId ? 'active' : ''}" data-practice="${mode.id}">
+        <span>${mode.navTitle}</span><small>${progress.completedPractice.includes(mode.id) ? 'COMPLETE' : 'PLAY'}</small>
+      </button>`).join('');
     const groups = registry.categories().map(category => {
       const buttons = registry.all()
         .filter(topic => topic.category === category)
@@ -44,9 +51,17 @@ export function createApp(document, window) {
       return `<section class="nav-group"><div class="nav-title">${category}</div>${buttons}</section>`;
     }).join('');
 
-    $('#topicNav').innerHTML = groups;
+    $('#topicNav').innerHTML = `
+      <section class="nav-group practice-nav">
+        <div class="nav-title">Interactive practice</div>
+        ${practiceButtons}
+      </section>
+      ${groups}`;
     document.querySelectorAll('[data-topic]').forEach(button => {
       button.addEventListener('click', () => selectTopic(button.dataset.topic));
+    });
+    document.querySelectorAll('[data-practice]').forEach(button => {
+      button.addEventListener('click', () => selectPractice(button.dataset.practice));
     });
   }
 
@@ -90,6 +105,7 @@ export function createApp(document, window) {
   function selectTopic(id) {
     if (!registry.has(id)) return;
     currentTopicId = id;
+    currentPracticeId = null;
     if (!progress.visited.includes(id)) {
       progress.visited = [...progress.visited, id];
       saveProgress();
@@ -97,6 +113,34 @@ export function createApp(document, window) {
     renderNavigation();
     renderTopic(registry.get(id));
     closeMenu();
+  }
+
+  function selectPractice(id) {
+    const mode = PRACTICE_MODES.find(entry => entry.id === id);
+    if (!mode || !PRACTICE_RENDERERS[id]) return;
+    currentPracticeId = id;
+    currentTopicId = null;
+    $('#topicTitle').textContent = mode.title;
+    $('#topicSubtitle').textContent = mode.subtitle;
+    $('#mobileTopicTitle').textContent = mode.navTitle;
+    $('#missionTitle').textContent = mode.navTitle;
+    $('#missionText').textContent = mode.summary;
+    renderNavigation();
+    PRACTICE_RENDERERS[id]({
+      board: $('#board'),
+      controls: $('#controls'),
+      feedback: $('#feedback'),
+      onComplete: () => completePractice(id)
+    });
+    closeMenu();
+  }
+
+  function completePractice(id) {
+    if (!progress.completedPractice.includes(id)) {
+      progress.completedPractice = [...progress.completedPractice, id];
+      saveProgress();
+      renderNavigation();
+    }
   }
 
   function toggleMastery(id) {
@@ -129,7 +173,7 @@ export function createApp(document, window) {
     selectTopic(DEFAULT_TOPIC_ID);
   }
 
-  return Object.freeze({ start, selectTopic, registry });
+  return Object.freeze({ start, selectTopic, selectPractice, registry });
 }
 
 if (typeof document !== 'undefined' && typeof window !== 'undefined') {
