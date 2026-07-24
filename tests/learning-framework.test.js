@@ -10,6 +10,7 @@ import {
   appendGlossaryText
 } from '../src/learning/components.js';
 import { GLOSSARY, GLOSSARY_BY_ID } from '../src/learning/glossary.js';
+import { renderGlossaryArchive } from '../src/learning/glossary-archive.js';
 import { TUTORIALS } from '../src/tutorials/content.js';
 
 test('glossary entries are interconnected and technical terms are highlighted', () => {
@@ -25,6 +26,59 @@ test('glossary entries are interconnected and technical terms are highlighted', 
   paragraph.querySelector('[data-glossary-id="socket"]').click();
   assert.match(document.querySelector('.definition-popover').textContent, /communication endpoint/i);
   assert.ok(GLOSSARY_BY_ID.get('socket').related.includes('TCP'));
+});
+
+test('popover supports hover preview, click pinning, toggling and glossary navigation', async () => {
+  const dom = new JSDOM('<main></main>', { url: 'http://localhost/' });
+  const { document } = dom.window;
+  let selected = null;
+  const popover = DefinitionPopover(document, { onLearnMore: entry => { selected = entry.id; } });
+  const paragraph = document.createElement('p');
+  appendGlossaryText(document, paragraph, 'TCP uses a Socket.', popover);
+  document.body.append(paragraph);
+  const socket = paragraph.querySelector('[data-glossary-id="socket"]');
+
+  socket.dispatchEvent(new dom.window.MouseEvent('mouseenter'));
+  assert.equal(popover.node.hidden, false);
+  assert.equal(popover.node.dataset.mode, 'preview');
+
+  socket.click();
+  assert.equal(popover.node.dataset.mode, 'pinned');
+  popover.node.querySelector('.definition-learn-more').click();
+  assert.equal(selected, 'socket');
+  assert.equal(popover.node.hidden, true);
+
+  socket.click();
+  assert.equal(popover.node.hidden, false);
+  socket.click();
+  assert.equal(popover.node.hidden, true);
+});
+
+test('central glossary archive searches, filters and opens related articles', () => {
+  const dom = new JSDOM('<main><div id="board"></div><div id="controls"></div><div id="feedback"></div></main>');
+  const { document } = dom.window;
+  const archive = renderGlossaryArchive({
+    document,
+    board: document.querySelector('#board'),
+    controls: document.querySelector('#controls'),
+    feedback: document.querySelector('#feedback'),
+    topicLabels: new Map([['sockets', 'Sockets']]),
+    initialEntryId: 'socket'
+  });
+
+  assert.equal(archive.cards.length, GLOSSARY.length);
+  assert.equal(document.querySelector('[data-glossary-entry="socket"]').classList.contains('targeted'), true);
+  assert.match(document.querySelector('[data-glossary-entry="socket"]').textContent, /Definition/i);
+  assert.match(document.querySelector('[data-glossary-entry="socket"]').textContent, /Explanation/i);
+
+  archive.search.value = 'DatagramSocket';
+  archive.search.dispatchEvent(new dom.window.Event('input'));
+  assert.equal(archive.cards.filter(card => !card.hidden).some(card => card.dataset.glossaryEntry === 'datagram-socket'), true);
+
+  archive.search.value = '';
+  archive.search.dispatchEvent(new dom.window.Event('input'));
+  document.querySelector('[data-glossary-entry="socket"] [data-glossary-related="tcp"]').click();
+  assert.equal(document.querySelector('[data-glossary-entry="tcp"]').classList.contains('targeted'), true);
 });
 
 test('interactive diagram and annotated code expose component explanations', () => {

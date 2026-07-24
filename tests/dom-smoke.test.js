@@ -13,6 +13,7 @@ test('application renders navigation, topic detail and progress', async () => {
 
   assert.equal(dom.window.document.querySelectorAll('[data-topic]').length, 14);
   assert.equal(dom.window.document.querySelectorAll('[data-practice]').length, 4);
+  assert.equal(dom.window.document.querySelectorAll('[data-glossary]').length, 1);
   assert.equal(dom.window.document.querySelector('#topicTitle').textContent, 'Distributed Systems');
   assert.equal(dom.window.document.querySelector('#topicCount').textContent, '14');
   assert.equal(app.tutorialRegistry.all().length, 14);
@@ -29,6 +30,18 @@ test('application renders navigation, topic detail and progress', async () => {
   dom.window.document.querySelector('[data-tutorial-answer="0"]').click();
   assert.equal(dom.window.document.querySelector('#tutorialNext').disabled, false);
   assert.equal(dom.window.document.querySelector('.step-status').textContent, 'Completed');
+});
+
+test('glossary is available from navigation and opens full articles', async () => {
+  const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+  const dom = new JSDOM(html, { url: 'http://localhost/' });
+  const app = createApp(dom.window.document, dom.window);
+
+  app.start();
+  dom.window.document.querySelector('[data-glossary]').click();
+  assert.equal(dom.window.document.querySelector('#topicTitle').textContent, 'Distributed Systems Glossary');
+  assert.ok(dom.window.document.querySelectorAll('[data-glossary-entry]').length >= 50);
+  assert.ok(dom.window.document.querySelector('[data-glossary-entry="socket"]'));
 });
 
 test('exam mode starts, stores answers and navigates between tasks', async () => {

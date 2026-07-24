@@ -21,7 +21,8 @@ export function createTutorialRenderer({
   closeButton,
   storage,
   onComplete,
-  onPractice
+  onPractice,
+  onGlossary
 }) {
   const title = panel.querySelector('#tutorialTitle');
   const description = panel.querySelector('#tutorialDescription');
@@ -33,7 +34,10 @@ export function createTutorialRenderer({
   const practiceButton = panel.querySelector('#tutorialPractice');
   const tracker = new ProgressTracker(storage);
   const popover = DefinitionPopover(document, {
-    onLearnMore: entry => open(entry.topicId)
+    onLearnMore: entry => {
+      close();
+      onGlossary?.(entry.id);
+    }
   });
 
   let activeTopicId = null;
@@ -144,7 +148,12 @@ export function createTutorialRenderer({
       ...step.paragraphs,
       step.example || ''
     ]);
-    if (related.length) article.append(RelatedConcepts(document, related, entry => open(entry.topicId)));
+    if (related.length) {
+      article.append(RelatedConcepts(document, related, entry => {
+        close();
+        onGlossary?.(entry.id);
+      }));
+    }
 
     article.append(KnowledgeCheck(document, step.check, {
       solved: checkSolved,
@@ -215,7 +224,10 @@ export function createTutorialRenderer({
       return;
     }
     if (event.key !== 'Tab') return;
-    const focusable = [...panel.querySelectorAll('button:not([disabled]):not([hidden]), summary')];
+    const focusable = [
+      ...panel.querySelectorAll('button:not([disabled]):not([hidden]), summary'),
+      ...popover.node.querySelectorAll('button:not([disabled]):not([hidden])')
+    ];
     if (!focusable.length) return;
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
