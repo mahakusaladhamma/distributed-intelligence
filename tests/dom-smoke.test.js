@@ -32,6 +32,29 @@ test('application renders navigation, topic detail and progress', async () => {
   assert.equal(dom.window.document.querySelector('.step-status').textContent, 'Completed');
 });
 
+test('course overview tutorial reaches every step and unlocks practice', async () => {
+  const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+  const dom = new JSDOM(html, { url: 'http://localhost/' });
+  const app = createApp(dom.window.document, dom.window);
+  const { document } = dom.window;
+
+  app.start();
+  document.querySelector('#tutorialBtn').click();
+  const tutorial = app.tutorialRegistry.get('overview');
+
+  tutorial.steps.forEach((step, index) => {
+    assert.equal(document.querySelector('.tutorial-step h3').textContent, step.title);
+    document.querySelector(`[data-tutorial-answer="${step.check.answer}"]`).click();
+    if (index < tutorial.steps.length - 1) {
+      assert.equal(document.querySelector('#tutorialNext').disabled, false);
+      document.querySelector('#tutorialNext').click();
+    }
+  });
+
+  assert.equal(document.querySelector('#tutorialPractice').hidden, false);
+  assert.equal(app.tutorialRenderer.readProgress().overview.completed, true);
+});
+
 test('glossary is available from navigation and opens full articles', async () => {
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
   const dom = new JSDOM(html, { url: 'http://localhost/' });

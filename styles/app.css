@@ -201,7 +201,7 @@ summary:focus-visible,
   min-height: 100dvh;
 }
 
-aside {
+#sidebar {
   border-right: 1px solid var(--line);
   background: rgba(10,15,30,.86);
   backdrop-filter: blur(16px);
@@ -3543,7 +3543,8 @@ body.tutorial-open .tutorial-backdrop {
 
 .definition-popover {
   position: fixed;
-  z-index: 80;
+  /* Popovers are appended to body and must sit above the tutorial dialog (90). */
+  z-index: 110;
   width: min(320px, calc(100vw - 24px));
   max-height: calc(100vh - 24px);
   overflow: auto;
