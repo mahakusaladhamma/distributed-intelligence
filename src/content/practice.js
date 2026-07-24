@@ -318,6 +318,39 @@ public Response find(@PathParam("id") long id) {
   })
 ]);
 
+export const FLASHCARDS = Object.freeze([
+  ['distributed-definition', 'Foundations', 'What makes a system distributed?', 'Autonomous computers coordinate through message exchange while components, data and failures are spread across a network.'],
+  ['transparency', 'Foundations', 'What is transparency in a distributed system?', 'It hides a selected aspect of distribution, such as access method, location, replication, concurrency, failure or scaling.'],
+  ['client-server', 'Organization', 'What do client and server describe?', 'Interaction roles: a client requests a service and a server provides it. One process can perform both roles in different exchanges.'],
+  ['middleware-role', 'Organization', 'Why is middleware used?', 'It provides reusable distributed mechanisms such as communication, naming, serialization, security and transactions above the network layer.'],
+  ['clock-drift', 'Time', 'What is clock drift?', 'The gradual divergence of physical clocks because their oscillators run at slightly different rates.'],
+  ['lamport-rule', 'Time', 'What guarantee does a Lamport clock provide?', 'If event a happened before event b, then L(a) is smaller than L(b). The reverse implication is not guaranteed.'],
+  ['vector-concurrency', 'Time', 'How do vector clocks identify concurrent events?', 'Two events are concurrent when neither vector timestamp is component-wise less than or equal to the other.'],
+  ['tcp-boundaries', 'Sockets', 'Does TCP preserve application message boundaries?', 'No. TCP provides a reliable ordered byte stream, so applications must define their own framing.'],
+  ['socket-endpoint', 'Sockets', 'Which values identify a transport endpoint?', 'The transport protocol, IP address and port. The IP routes to an interface; the port selects an application endpoint.'],
+  ['udp-guarantees', 'Sockets', 'Which guarantees does UDP omit?', 'UDP does not guarantee delivery, ordering or duplicate suppression, but it preserves individual datagram boundaries.'],
+  ['rmi-roles', 'RMI', 'What are stub and servant in RMI?', 'The stub is the client-side proxy; the servant is the server-side object that executes the remote operation.'],
+  ['rmi-registry', 'RMI', 'What does the RMI registry provide?', 'A naming service that maps a logical service name to a remote object reference.'],
+  ['serialization-state', 'Serialization', 'Which fields are excluded from default Java object serialization?', 'Static fields are class state, not object state; transient instance fields are explicitly excluded.'],
+  ['object-graph', 'Serialization', 'What is serialized when an object references other objects?', 'The reachable graph of serializable objects, while preserving shared references within that graph.'],
+  ['xml-wellformed-valid', 'XML', 'How do well-formed and valid XML differ?', 'Well-formed XML follows syntax rules. Valid XML is also well-formed and conforms to its DTD or XML Schema.'],
+  ['dtd-xsd', 'XML', 'What is a key difference between DTD and XML Schema?', 'XML Schema is XML-based and provides namespaces and rich data types; DTD has a more limited type system.'],
+  ['http-message', 'Web', 'What are the essential parts of an HTTP exchange?', 'A request contains a method, target, headers and optional body; a response contains a status, headers and optional body.'],
+  ['servlet-lifecycle', 'Web', 'Who controls a servlet lifecycle?', 'The web container creates and initializes the servlet, dispatches requests to service methods and eventually destroys it.'],
+  ['jsp-translation', 'JSP', 'What happens to a JSP before it serves requests?', 'The container translates it into a servlet and compiles that generated servlet class.'],
+  ['jsp-scope', 'JSP', 'Name the common JSP data scopes from narrowest to widest.', 'Page, request, session and application scope.'],
+  ['soap-envelope', 'Web Services', 'What is the structure of a SOAP message?', 'An XML Envelope contains an optional Header and a mandatory Body carrying the message payload or fault.'],
+  ['wsdl-contract', 'Web Services', 'What does WSDL describe?', 'A web-service contract: operations, messages, data types, bindings and service endpoints.'],
+  ['rest-resource', 'REST', 'What is a resource in REST?', 'A conceptual entity identified by a URI whose state is exchanged through representations.'],
+  ['http-idempotence', 'REST', 'What does idempotent mean for an HTTP method?', 'Repeating the same request has the same intended effect as performing it once. GET, PUT and DELETE are defined as idempotent.'],
+  ['prepared-statement', 'JDBC', 'Why use PreparedStatement parameters?', 'They separate values from SQL structure, improve type handling and help prevent SQL injection.'],
+  ['jdbc-transaction', 'JDBC', 'Where is transaction control located in JDBC?', 'On the Connection, using auto-commit configuration plus commit() and rollback().'],
+  ['persistence-context', 'JPA', 'What does a JPA persistence context guarantee?', 'It tracks managed entities and maintains one managed Java instance per persistent identity within that context.'],
+  ['entity-states', 'JPA', 'What are the main JPA entity states?', 'New/transient, managed/persistent, detached and removed.'],
+  ['queue-topic', 'JMS', 'How do a JMS queue and topic differ?', 'A queue delivers each message to one competing consumer; a topic can deliver a publication to every eligible subscriber.'],
+  ['message-broker', 'JMS', 'Why does a message broker decouple participants?', 'Producers send to destinations rather than consumers directly, allowing separation in time, location and implementation.']
+].map(([id, topic, front, back]) => Object.freeze({ id, topic, front, back })));
+
 export const PRACTICE_MODES = Object.freeze([
   {
     id: 'concept-blitz',
@@ -354,6 +387,15 @@ export const PRACTICE_MODES = Object.freeze([
     subtitle: 'Complete the essential Java API patterns',
     summary: 'Fill the gaps in compact Java snippets for sockets, RMI, serialization, web APIs, persistence and messaging.',
     kind: 'code-completion'
+  },
+  {
+    id: 'flashcards',
+    navTitle: 'Flashcards',
+    category: 'Practice',
+    title: 'Theory Flashcards',
+    subtitle: 'Prioritized recall across the complete course',
+    summary: 'Recall core theory, reveal the answer and rate each card as Again, Learning or Mastered to control its review priority.',
+    kind: 'flashcards'
   },
   {
     id: 'exam-mode',

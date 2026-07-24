@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CLOCK_CHALLENGES, CONCEPT_QUESTIONS, JAVA_LAB_SNIPPETS, MESSAGE_FLOWS, PRACTICE_MODES } from '../src/content/practice.js';
+import { CLOCK_CHALLENGES, CONCEPT_QUESTIONS, FLASHCARDS, JAVA_LAB_SNIPPETS, MESSAGE_FLOWS, PRACTICE_MODES } from '../src/content/practice.js';
 
 test('initial practice lineup has valid answer keys and flows', () => {
-  assert.deepEqual(PRACTICE_MODES.map(mode => mode.id), ['concept-blitz', 'clock-lab', 'message-flow', 'java-lab', 'exam-mode']);
+  assert.deepEqual(PRACTICE_MODES.map(mode => mode.id), ['concept-blitz', 'clock-lab', 'message-flow', 'java-lab', 'flashcards', 'exam-mode']);
   assert.ok(CONCEPT_QUESTIONS.length >= 10);
   assert.ok(CLOCK_CHALLENGES.some(challenge => challenge.type === 'Cristian'));
   assert.ok(CLOCK_CHALLENGES.some(challenge => challenge.type === 'Vector clock'));
@@ -36,4 +36,15 @@ test('Java Lab snippets have resolvable, unique completion gaps', () => {
       assert.ok(blank.hint.length > 20);
     });
   }
+});
+
+test('flashcards cover the complete theory map with unique prompts', () => {
+  assert.ok(FLASHCARDS.length >= 28);
+  assert.ok(new Set(FLASHCARDS.map(card => card.topic)).size >= 12);
+  assert.equal(new Set(FLASHCARDS.map(card => card.id)).size, FLASHCARDS.length);
+  assert.equal(new Set(FLASHCARDS.map(card => card.front)).size, FLASHCARDS.length);
+  FLASHCARDS.forEach(card => {
+    assert.ok(card.front.length > 15);
+    assert.ok(card.back.length > 40);
+  });
 });

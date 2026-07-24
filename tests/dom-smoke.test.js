@@ -12,7 +12,7 @@ test('application renders navigation, topic detail and progress', async () => {
   app.start();
 
   assert.equal(dom.window.document.querySelectorAll('[data-topic]').length, 14);
-  assert.equal(dom.window.document.querySelectorAll('[data-practice]').length, 5);
+  assert.equal(dom.window.document.querySelectorAll('[data-practice]').length, 6);
   assert.equal(dom.window.document.querySelectorAll('[data-glossary]').length, 1);
   assert.equal(dom.window.document.querySelector('#topicTitle').textContent, 'Distributed Systems');
   assert.equal(dom.window.document.querySelector('#topicCount').textContent, '14');
@@ -127,4 +127,26 @@ test('Java Lab validates gaps, synchronizes repeated tokens and advances', async
   assert.ok(document.querySelector('#nextJavaSnippet'));
   document.querySelector('#nextJavaSnippet').click();
   assert.match(document.querySelector('.java-lab-title').textContent, /Accept a TCP connection/i);
+});
+
+test('flashcards reveal answers and persist three-stage ratings', async () => {
+  const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+  const dom = new JSDOM(html, { url: 'http://localhost/' });
+  const app = createApp(dom.window.document, dom.window);
+  const { document, localStorage } = dom.window;
+
+  app.start();
+  app.selectPractice('flashcards');
+  const firstId = document.querySelector('[data-flashcard]').dataset.flashcard;
+  assert.equal(document.querySelectorAll('.flashcard-stats span').length, 3);
+  document.querySelector('#revealFlashcard').click();
+  assert.match(document.querySelector('.flashcard-side').textContent, /Answer/);
+  assert.equal(document.querySelectorAll('[data-flashcard-rating]').length, 3);
+  document.querySelector('[data-flashcard-rating="mastered"]').click();
+
+  const saved = JSON.parse(localStorage.getItem('distributedIntelligenceFlashcardProgress'));
+  assert.equal(saved[firstId].level, 2);
+  assert.equal(saved[firstId].reviews, 1);
+  assert.notEqual(document.querySelector('[data-flashcard]').dataset.flashcard, firstId);
+  assert.equal(document.querySelector('.flashcard-stats .mastered strong').textContent, '1');
 });

@@ -160,6 +160,7 @@ export function createApp(document, window) {
       board: $('#board'),
       controls: $('#controls'),
       feedback: $('#feedback'),
+      storage: window.localStorage,
       onComplete: () => completePractice(id)
     });
     closeMenu();

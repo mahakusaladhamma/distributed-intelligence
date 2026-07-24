@@ -1,5 +1,6 @@
 import { CLOCK_CHALLENGES, CONCEPT_QUESTIONS, JAVA_LAB_SNIPPETS, MESSAGE_FLOWS } from '../content/practice.js';
 import { mountExamMode } from './exam-mode.js';
+import { mountFlashcards } from './flashcards.js';
 
 function setFeedback(element, message, state = '') {
   element.className = `feedback ${state}`.trim();
@@ -352,5 +353,6 @@ export const PRACTICE_RENDERERS = Object.freeze({
   'clock-lab': mountClockLab,
   'message-flow': mountMessageFlow,
   'java-lab': mountJavaLab,
+  flashcards: mountFlashcards,
   'exam-mode': mountExamMode
 });
