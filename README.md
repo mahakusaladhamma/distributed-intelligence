@@ -1,8 +1,10 @@
 # Distributed Intelligence
 
-Current learning release: **v0.7 · Theory Flashcards**
+Current learning release: **v0.8 · Integrated Tutorials**
 
 The interactive learning framework turns the guided theory paths into reusable course modules with contextual definitions, progressive disclosure, clickable diagrams, annotated code, embedded checks, concept links and section-level progress.
+
+Guided theory is embedded directly into every topic page as the primary learning content. Topic selection opens the saved tutorial step immediately; no modal or separate tutorial launcher is required.
 
 Interactive exam preparation for the Distributed Systems module.
 

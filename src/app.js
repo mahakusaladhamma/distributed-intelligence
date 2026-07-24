@@ -21,10 +21,7 @@ export function createApp(document, window) {
   const tutorialRenderer = createTutorialRenderer({
     document,
     registry: tutorialRegistry,
-    trigger: $('#tutorialBtn'),
     panel: $('#tutorialPanel'),
-    backdrop: $('#tutorialBackdrop'),
-    closeButton: $('#tutorialClose'),
     storage: window.localStorage,
     onComplete: completeTutorial,
     onPractice: selectRelatedPractice,
@@ -126,7 +123,7 @@ export function createApp(document, window) {
     $('#feedback').textContent = mastered
       ? 'This topic is currently marked as understood.'
       : 'Read the objectives and use the marker to track your preparation.';
-    tutorialRenderer.syncTrigger(topic.id);
+    tutorialRenderer.open(topic.id);
   }
 
   function selectTopic(id) {
@@ -134,6 +131,7 @@ export function createApp(document, window) {
     currentTopicId = id;
     currentPracticeId = null;
     glossaryOpen = false;
+    tutorialRenderer.close();
     if (!progress.visited.includes(id)) {
       progress.visited = [...progress.visited, id];
       saveProgress();
@@ -149,12 +147,12 @@ export function createApp(document, window) {
     currentPracticeId = id;
     currentTopicId = null;
     glossaryOpen = false;
+    tutorialRenderer.close();
     $('#topicTitle').textContent = mode.title;
     $('#topicSubtitle').textContent = mode.subtitle;
     $('#mobileTopicTitle').textContent = mode.navTitle;
     $('#missionTitle').textContent = mode.navTitle;
     $('#missionText').textContent = mode.summary;
-    $('#tutorialBtn').hidden = true;
     renderNavigation();
     PRACTICE_RENDERERS[id]({
       board: $('#board'),
@@ -170,12 +168,12 @@ export function createApp(document, window) {
     glossaryOpen = true;
     currentTopicId = null;
     currentPracticeId = null;
+    tutorialRenderer.close();
     $('#topicTitle').textContent = 'Distributed Systems Glossary';
     $('#topicSubtitle').textContent = 'Definitions, explanations and connections across the complete module.';
     $('#mobileTopicTitle').textContent = 'Glossary';
     $('#missionTitle').textContent = 'Concept archive';
     $('#missionText').textContent = 'Search the shared vocabulary behind every tutorial and follow its related concepts.';
-    $('#tutorialBtn').hidden = true;
     renderNavigation();
     renderGlossaryArchive({
       document,
@@ -242,9 +240,6 @@ export function createApp(document, window) {
     $('#menuBtn').addEventListener('click', openMenu);
     $('#closeMenuBtn').addEventListener('click', closeMenu);
     $('#navBackdrop').addEventListener('click', closeMenu);
-    $('#tutorialBtn').addEventListener('click', () => {
-      if (currentTopicId) tutorialRenderer.open(currentTopicId);
-    });
     renderStats();
     selectTopic(DEFAULT_TOPIC_ID);
   }

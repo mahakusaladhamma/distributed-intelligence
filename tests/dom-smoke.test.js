@@ -21,8 +21,8 @@ test('application renders navigation, topic detail and progress', async () => {
   app.selectTopic('jms');
   assert.equal(dom.window.document.querySelector('#topicTitle').textContent, 'Java Message Service');
   assert.equal(dom.window.document.querySelector('#visitedCount').textContent, '2');
-  dom.window.document.querySelector('#tutorialBtn').click();
   assert.equal(dom.window.document.querySelector('#tutorialPanel').classList.contains('open'), true);
+  assert.equal(dom.window.document.querySelector('#tutorialPanel').closest('.game-body') !== null, true);
   assert.match(dom.window.document.querySelector('#tutorialTitle').textContent, /JMS|messaging/i);
   assert.equal(dom.window.document.querySelectorAll('[data-tutorial-answer]').length, 3);
   assert.ok(dom.window.document.querySelectorAll('[data-glossary-id]').length >= 1);
@@ -39,7 +39,6 @@ test('course overview tutorial reaches every step and unlocks practice', async (
   const { document } = dom.window;
 
   app.start();
-  document.querySelector('#tutorialBtn').click();
   const tutorial = app.tutorialRegistry.get('overview');
 
   tutorial.steps.forEach((step, index) => {
@@ -94,6 +93,7 @@ test('interactive practice modes render and accept input', async () => {
   app.selectPractice('clock-lab');
 
   assert.equal(dom.window.document.querySelector('#topicTitle').textContent, 'Clock Lab');
+  assert.equal(dom.window.document.querySelector('#tutorialPanel').hidden, true);
   assert.equal(dom.window.document.querySelectorAll('[data-answer]').length, 3);
   dom.window.document.querySelector('[data-answer="0"]').click();
   assert.match(dom.window.document.querySelector('#feedback').textContent, /30 ms/);
@@ -101,6 +101,10 @@ test('interactive practice modes render and accept input', async () => {
   app.selectPractice('message-flow');
   assert.equal(dom.window.document.querySelectorAll('[data-step]').length, 5);
   assert.match(dom.window.document.querySelector('#missionText').textContent, /control and data flow/);
+
+  app.selectTopic('rest');
+  assert.equal(dom.window.document.querySelector('#tutorialPanel').hidden, false);
+  assert.match(dom.window.document.querySelector('#tutorialTitle').textContent, /REST/i);
 });
 
 test('Java Lab validates gaps, synchronizes repeated tokens and advances', async () => {

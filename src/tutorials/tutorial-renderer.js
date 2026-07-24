@@ -15,10 +15,7 @@ import {
 export function createTutorialRenderer({
   document,
   registry,
-  trigger,
   panel,
-  backdrop,
-  closeButton,
   storage,
   onComplete,
   onPractice,
@@ -42,7 +39,6 @@ export function createTutorialRenderer({
 
   let activeTopicId = null;
   let index = 0;
-  let returnFocus = null;
   let checkSolved = false;
 
   function readProgress() {
@@ -54,18 +50,10 @@ export function createTutorialRenderer({
   }
 
   function setOpen(openState) {
-    document.body.classList.toggle('tutorial-open', openState);
     panel.classList.toggle('open', openState);
+    panel.hidden = !openState;
     panel.setAttribute('aria-hidden', String(!openState));
-    backdrop.classList.toggle('show', openState);
-    trigger.setAttribute('aria-expanded', String(openState));
-    document.querySelector('.app')?.toggleAttribute('inert', openState);
-    document.querySelector('.mobile-header')?.toggleAttribute('inert', openState);
-    if (openState) closeButton.focus({ preventScroll: true });
-    else {
-      popover.close();
-      returnFocus?.focus?.({ preventScroll: true });
-    }
+    if (!openState) popover.close();
   }
 
   function completeCheck(step) {
@@ -81,7 +69,6 @@ export function createTutorialRenderer({
     );
     nextButton.disabled = false;
     practiceButton.hidden = !tutorialComplete;
-    syncTrigger(activeTopicId);
     renderStepMeta(step);
     if (tutorialComplete) onComplete(activeTopicId);
   }
@@ -170,7 +157,6 @@ export function createTutorialRenderer({
 
   function open(topicId) {
     if (!registry.has(topicId)) return;
-    if (!panel.classList.contains('open')) returnFocus = document.activeElement;
     activeTopicId = topicId;
     const tutorial = registry.get(topicId);
     const progress = tracker.get(topicId);
@@ -183,62 +169,26 @@ export function createTutorialRenderer({
     if (panel.classList.contains('open')) setOpen(false);
   }
 
-  function syncTrigger(topicId) {
-    const available = registry.has(topicId);
-    trigger.hidden = !available;
-    trigger.disabled = !available;
-    if (!available) return;
-    const tutorial = registry.get(topicId);
-    const progress = tracker.get(topicId);
-    if (progress.completed) {
-      trigger.textContent = 'Tutorial complete';
-    } else if (progress.started) {
-      trigger.textContent = `Continue tutorial · ${Math.min((progress.step || 0) + 1, tutorial.steps.length)}/${tutorial.steps.length}`;
-    } else {
-      trigger.textContent = `Open tutorial · 1/${tutorial.steps.length}`;
-    }
+  function resetReadingPosition() {
+    body.scrollTop = 0;
+    panel.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
   }
 
   previousButton.addEventListener('click', () => {
     if (index === 0) return;
     index -= 1;
     render();
-    body.scrollTop = 0;
+    resetReadingPosition();
   });
   nextButton.addEventListener('click', () => {
     if (!checkSolved) return;
     index += 1;
     render();
-    body.scrollTop = 0;
+    resetReadingPosition();
   });
   practiceButton.addEventListener('click', () => {
     close();
     onPractice(activeTopicId);
   });
-  closeButton.addEventListener('click', close);
-  backdrop.addEventListener('click', close);
-  panel.addEventListener('keydown', event => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      close();
-      return;
-    }
-    if (event.key !== 'Tab') return;
-    const focusable = [
-      ...panel.querySelectorAll('button:not([disabled]):not([hidden]), summary'),
-      ...popover.node.querySelectorAll('button:not([disabled]):not([hidden])')
-    ];
-    if (!focusable.length) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  });
-
-  return Object.freeze({ open, close, syncTrigger, readProgress, tracker });
+  return Object.freeze({ open, close, readProgress, tracker });
 }

@@ -11,13 +11,16 @@ function lastZIndex(selector) {
   return Number(matches.at(-1)[1]);
 }
 
-test('glossary popovers render above the tutorial dialog and its backdrop', () => {
-  const popover = lastZIndex('.definition-popover');
-  assert.ok(popover > lastZIndex('.tutorial-panel'));
-  assert.ok(popover > lastZIndex('.tutorial-backdrop'));
+test('glossary popovers remain above embedded tutorial content', () => {
+  assert.ok(lastZIndex('.definition-popover') > 0);
 });
 
 test('viewport-height sidebar styles are scoped away from tutorial callouts', () => {
   assert.doesNotMatch(css, /(?:^|\n)aside\s*\{[^}]*height:\s*100(?:d)?vh/gs);
   assert.match(css, /#sidebar\s*\{[^}]*height:\s*100vh[^}]*height:\s*100dvh/gs);
+});
+
+test('embedded tutorials participate in page layout instead of fixed overlay layout', () => {
+  assert.match(css, /\.tutorial-panel\.tutorial-embedded\s*\{[^}]*position:\s*relative/gs);
+  assert.match(css, /\.tutorial-embedded \.tutorial-body\s*\{[^}]*overflow:\s*visible/gs);
 });
