@@ -3,6 +3,8 @@ import { PRACTICE_MODES } from './content/practice.js';
 import { TOPICS } from './content/topics.js';
 import { createTopicRegistry } from './core/topic-registry.js';
 import { PRACTICE_RENDERERS } from './games/practice-games.js';
+import { renderGlossaryArchive } from './learning/glossary-archive.js';
+import { GLOSSARY } from './learning/glossary.js';
 import { TUTORIALS } from './tutorials/content.js';
 import { createTutorialRegistry } from './tutorials/tutorial-registry.js';
 import { createTutorialRenderer } from './tutorials/tutorial-renderer.js';
@@ -14,6 +16,7 @@ export function createApp(document, window) {
   const defaultProgress = { visited: [], mastered: [], completedPractice: [], completedTutorials: [] };
   let currentTopicId = DEFAULT_TOPIC_ID;
   let currentPracticeId = null;
+  let glossaryOpen = false;
   let progress = loadProgress();
   const tutorialRenderer = createTutorialRenderer({
     document,
@@ -24,7 +27,8 @@ export function createApp(document, window) {
     closeButton: $('#tutorialClose'),
     storage: window.localStorage,
     onComplete: completeTutorial,
-    onPractice: selectRelatedPractice
+    onPractice: selectRelatedPractice,
+    onGlossary: selectGlossary
   });
 
   function loadProgress() {
@@ -67,6 +71,12 @@ export function createApp(document, window) {
     }).join('');
 
     $('#topicNav').innerHTML = `
+      <section class="nav-group knowledge-nav">
+        <div class="nav-title">Knowledge tools</div>
+        <button class="algo-btn ${glossaryOpen ? 'active' : ''}" data-glossary>
+          <span>Glossary</span><small>${GLOSSARY.length} TERMS</small>
+        </button>
+      </section>
       <section class="nav-group practice-nav">
         <div class="nav-title">Interactive practice</div>
         ${practiceButtons}
@@ -78,6 +88,7 @@ export function createApp(document, window) {
     document.querySelectorAll('[data-practice]').forEach(button => {
       button.addEventListener('click', () => selectPractice(button.dataset.practice));
     });
+    document.querySelector('[data-glossary]')?.addEventListener('click', () => selectGlossary());
   }
 
   function renderTopic(topic) {
@@ -122,6 +133,7 @@ export function createApp(document, window) {
     if (!registry.has(id)) return;
     currentTopicId = id;
     currentPracticeId = null;
+    glossaryOpen = false;
     if (!progress.visited.includes(id)) {
       progress.visited = [...progress.visited, id];
       saveProgress();
@@ -136,6 +148,7 @@ export function createApp(document, window) {
     if (!mode || !PRACTICE_RENDERERS[id]) return;
     currentPracticeId = id;
     currentTopicId = null;
+    glossaryOpen = false;
     $('#topicTitle').textContent = mode.title;
     $('#topicSubtitle').textContent = mode.subtitle;
     $('#mobileTopicTitle').textContent = mode.navTitle;
@@ -148,6 +161,29 @@ export function createApp(document, window) {
       controls: $('#controls'),
       feedback: $('#feedback'),
       onComplete: () => completePractice(id)
+    });
+    closeMenu();
+  }
+
+  function selectGlossary(entryId = null) {
+    glossaryOpen = true;
+    currentTopicId = null;
+    currentPracticeId = null;
+    $('#topicTitle').textContent = 'Distributed Systems Glossary';
+    $('#topicSubtitle').textContent = 'Definitions, explanations and connections across the complete module.';
+    $('#mobileTopicTitle').textContent = 'Glossary';
+    $('#missionTitle').textContent = 'Concept archive';
+    $('#missionText').textContent = 'Search the shared vocabulary behind every tutorial and follow its related concepts.';
+    $('#tutorialBtn').hidden = true;
+    renderNavigation();
+    renderGlossaryArchive({
+      document,
+      board: $('#board'),
+      controls: $('#controls'),
+      feedback: $('#feedback'),
+      topicLabels: new Map(registry.all().map(topic => [topic.id, topic.navTitle])),
+      initialEntryId: entryId,
+      onOpenTopic: selectTopic
     });
     closeMenu();
   }
@@ -212,7 +248,7 @@ export function createApp(document, window) {
     selectTopic(DEFAULT_TOPIC_ID);
   }
 
-  return Object.freeze({ start, selectTopic, selectPractice, registry, tutorialRegistry, tutorialRenderer });
+  return Object.freeze({ start, selectTopic, selectPractice, selectGlossary, registry, tutorialRegistry, tutorialRenderer });
 }
 
 if (typeof document !== 'undefined' && typeof window !== 'undefined') {

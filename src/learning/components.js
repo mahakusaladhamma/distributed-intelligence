@@ -1,5 +1,7 @@
 import { GLOSSARY_BY_ID, GLOSSARY_MATCHES } from './glossary.js';
 
+let popoverSequence = 0;
+
 export function element(document, tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -9,24 +11,54 @@ export function element(document, tag, className, text) {
 
 export function DefinitionPopover(document, { onLearnMore } = {}) {
   const popover = element(document, 'aside', 'definition-popover');
+  const popoverId = `definition-popover-${++popoverSequence}`;
+  popover.id = popoverId;
   popover.hidden = true;
   popover.setAttribute('role', 'dialog');
   popover.setAttribute('aria-label', 'Glossary definition');
   document.body.append(popover);
   let activeTrigger = null;
+  let activeEntry = null;
+  let pinned = false;
+  let closeTimer = null;
+
+  function cancelClose() {
+    if (closeTimer !== null) {
+      document.defaultView?.clearTimeout(closeTimer);
+      closeTimer = null;
+    }
+  }
 
   function close({ restoreFocus = false } = {}) {
+    cancelClose();
     popover.hidden = true;
     activeTrigger?.setAttribute('aria-expanded', 'false');
     if (restoreFocus) activeTrigger?.focus?.();
     activeTrigger = null;
+    activeEntry = null;
+    pinned = false;
+    delete popover.dataset.mode;
   }
 
-  function open(entry, trigger) {
-    if (activeTrigger === trigger && !popover.hidden) return;
-    activeTrigger?.setAttribute('aria-expanded', 'false');
-    activeTrigger = trigger;
-    trigger.setAttribute('aria-expanded', 'true');
+  function position() {
+    if (!activeTrigger || popover.hidden) return;
+    const view = document.defaultView;
+    const viewportWidth = document.documentElement.clientWidth || view?.innerWidth || 800;
+    const viewportHeight = document.documentElement.clientHeight || view?.innerHeight || 600;
+    const triggerRect = activeTrigger.getBoundingClientRect();
+    const popoverRect = popover.getBoundingClientRect();
+    const width = popoverRect.width || Math.min(320, viewportWidth - 24);
+    const height = popoverRect.height || 260;
+    const below = viewportHeight - triggerRect.bottom - 12;
+    const placeAbove = below < Math.min(height, 260) && triggerRect.top > below;
+    const desiredTop = placeAbove ? triggerRect.top - height - 8 : triggerRect.bottom + 8;
+
+    popover.style.left = `${Math.max(12, Math.min(triggerRect.left, viewportWidth - width - 12))}px`;
+    popover.style.top = `${Math.max(12, Math.min(desiredTop, viewportHeight - height - 12))}px`;
+    popover.dataset.placement = placeAbove ? 'top' : 'bottom';
+  }
+
+  function render(entry) {
     popover.replaceChildren();
     const heading = element(document, 'strong', 'definition-title', entry.term);
     const closeButton = element(document, 'button', 'definition-close', '×');
@@ -38,28 +70,70 @@ export function DefinitionPopover(document, { onLearnMore } = {}) {
     const list = element(document, 'ul', 'definition-points');
     entry.details.forEach(point => list.append(element(document, 'li', '', point)));
     const related = element(document, 'p', 'definition-related', `Related: ${entry.related.join(' · ')}`);
-    const learnMore = element(document, 'button', 'definition-learn-more', 'Learn more');
+    const learnMore = element(document, 'button', 'definition-learn-more', 'Open glossary article');
     learnMore.type = 'button';
     learnMore.addEventListener('click', () => {
       close();
       onLearnMore?.(entry);
     });
     popover.append(head, element(document, 'p', '', entry.definition), list, related, learnMore);
-    popover.hidden = false;
+  }
 
-    const rect = trigger.getBoundingClientRect();
-    popover.style.left = `${Math.max(12, Math.min(rect.left, (document.defaultView?.innerWidth || 800) - 332))}px`;
-    popover.style.top = `${Math.max(12, rect.bottom + 8)}px`;
+  function open(entry, trigger, { pin = false } = {}) {
+    cancelClose();
+    if (activeTrigger === trigger && activeEntry === entry && !popover.hidden) {
+      pinned = pinned || pin;
+      popover.dataset.mode = pinned ? 'pinned' : 'preview';
+      return;
+    }
+    activeTrigger?.setAttribute('aria-expanded', 'false');
+    activeTrigger = trigger;
+    activeEntry = entry;
+    pinned = pin;
+    trigger.setAttribute('aria-expanded', 'true');
+    trigger.setAttribute('aria-controls', popoverId);
+    render(entry);
+    popover.hidden = false;
+    popover.dataset.mode = pinned ? 'pinned' : 'preview';
+    position();
+  }
+
+  function scheduleClose() {
+    cancelClose();
+    if (pinned) return;
+    closeTimer = document.defaultView?.setTimeout(() => close(), 120) ?? null;
+  }
+
+  function toggle(entry, trigger) {
+    if (activeTrigger === trigger && !popover.hidden && pinned) {
+      close();
+      return;
+    }
+    open(entry, trigger, { pin: true });
   }
 
   document.addEventListener('pointerdown', event => {
-    if (!popover.hidden && !popover.contains(event.target) && event.target !== activeTrigger) close();
+    if (!popover.hidden && !popover.contains(event.target) && !activeTrigger?.contains(event.target)) close();
   });
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape' && !popover.hidden) close({ restoreFocus: true });
   });
+  document.defaultView?.addEventListener('resize', position);
+  document.addEventListener('scroll', position, true);
+  popover.addEventListener('mouseenter', cancelClose);
+  popover.addEventListener('mouseleave', scheduleClose);
 
-  return Object.freeze({ open, close, node: popover });
+  return Object.freeze({
+    open,
+    close,
+    toggle,
+    scheduleClose,
+    cancelClose,
+    position,
+    isOpenFor: trigger => activeTrigger === trigger && !popover.hidden,
+    isPinned: () => pinned,
+    node: popover
+  });
 }
 
 export function GlossaryTerm(document, entry, label, popover) {
@@ -68,10 +142,14 @@ export function GlossaryTerm(document, entry, label, popover) {
   term.dataset.glossaryId = entry.id;
   term.setAttribute('aria-label', `${label}: open definition`);
   term.setAttribute('aria-expanded', 'false');
-  term.addEventListener('click', () => {
-    if (term.getAttribute('aria-expanded') !== 'true') popover.open(entry, term);
+  term.addEventListener('click', event => {
+    event.preventDefault();
+    popover.toggle(entry, term);
   });
   term.addEventListener('mouseenter', () => popover.open(entry, term));
+  term.addEventListener('mouseleave', popover.scheduleClose);
+  term.addEventListener('focus', () => popover.open(entry, term));
+  term.addEventListener('blur', popover.scheduleClose);
   return term;
 }
 
