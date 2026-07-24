@@ -9,7 +9,6 @@ function searchableText(entry) {
   return normalize([
     entry.term,
     entry.definition,
-    entry.explanation,
     ...entry.details,
     ...entry.related,
     ...entry.aliases
@@ -45,10 +44,9 @@ function createEntryCard(document, entry, topicLabels, onOpenTopic) {
   const definition = element(document, 'p', 'glossary-definition', entry.definition);
   const details = element(document, 'details', 'glossary-explanation');
   const summary = element(document, 'summary', '', 'Explanation');
-  const explanation = element(document, 'p', '', entry.explanation);
   const points = element(document, 'ul');
   entry.details.forEach(point => points.append(element(document, 'li', '', point)));
-  details.append(summary, explanation, points);
+  details.append(summary, points);
 
   const related = element(document, 'div', 'glossary-card-related');
   related.append(element(document, 'strong', 'glossary-field-label', 'Related concepts'));

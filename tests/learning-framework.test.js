@@ -70,6 +70,8 @@ test('central glossary archive searches, filters and opens related articles', ()
   assert.equal(document.querySelector('[data-glossary-entry="socket"]').classList.contains('targeted'), true);
   assert.match(document.querySelector('[data-glossary-entry="socket"]').textContent, /Definition/i);
   assert.match(document.querySelector('[data-glossary-entry="socket"]').textContent, /Explanation/i);
+  assert.equal(document.querySelector('[data-glossary-entry="socket"] .glossary-explanation p'), null);
+  assert.equal(document.querySelectorAll('[data-glossary-entry="socket"] .glossary-explanation li').length, 2);
 
   archive.search.value = 'DatagramSocket';
   archive.search.dispatchEvent(new dom.window.Event('input'));
