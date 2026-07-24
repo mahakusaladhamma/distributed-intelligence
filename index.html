@@ -50,6 +50,9 @@
     <section class="game-shell">
       <div class="game-head">
         <div><h3 id="topicTitle"></h3><p id="topicSubtitle"></p></div>
+        <button class="btn tutorial-trigger" id="tutorialBtn" type="button" aria-controls="tutorialPanel" aria-expanded="false">
+          Open tutorial
+        </button>
       </div>
       <div class="game-body">
         <div class="mission">
@@ -68,6 +71,28 @@
     </footer>
   </main>
 </div>
+
+<button class="tutorial-backdrop" id="tutorialBackdrop" type="button" aria-label="Close tutorial" tabindex="-1"></button>
+<aside class="tutorial-panel" id="tutorialPanel" aria-hidden="true" aria-label="Topic tutorial">
+  <header class="tutorial-header">
+    <div>
+      <span class="tutorial-eyebrow">Guided theory</span>
+      <h2 id="tutorialTitle"></h2>
+      <p id="tutorialDescription"></p>
+    </div>
+    <button class="tutorial-close" id="tutorialClose" type="button" aria-label="Close tutorial">×</button>
+  </header>
+  <div class="tutorial-progress">
+    <span id="tutorialProgressText"></span>
+    <div class="tutorial-progress-track"><span id="tutorialProgressBar"></span></div>
+  </div>
+  <div class="tutorial-body" id="tutorialBody"></div>
+  <footer class="tutorial-footer">
+    <button class="btn" id="tutorialPrevious" type="button">Previous</button>
+    <button class="btn primary" id="tutorialNext" type="button">Next step</button>
+    <button class="btn primary" id="tutorialPractice" type="button" hidden>Continue to practice</button>
+  </footer>
+</aside>
 
 <script type="module" src="./src/app.js"></script>
 </body>
