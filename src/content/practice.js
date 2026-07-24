@@ -139,6 +139,185 @@ export const MESSAGE_FLOWS = Object.freeze([
   }
 ].map(flow => Object.freeze({ ...flow, steps: Object.freeze([...flow.steps]) })));
 
+const javaSnippet = snippet => Object.freeze({
+  ...snippet,
+  blanks: Object.freeze(snippet.blanks.map(blank => Object.freeze({
+    ...blank,
+    alternatives: Object.freeze([...(blank.alternatives || [])])
+  })))
+});
+
+export const JAVA_LAB_SNIPPETS = Object.freeze([
+  javaSnippet({
+    id: 'tcp-client',
+    topic: 'Sockets',
+    title: 'Open a TCP client connection',
+    instruction: 'Complete the class and the methods used to connect and obtain the byte streams.',
+    template: `try ({{socketType}} socket = new {{socketType}}("localhost", 8080);
+     InputStream in = socket.{{inputMethod}}();
+     OutputStream out = socket.{{outputMethod}}()) {
+    out.write("ping\\n".getBytes(StandardCharsets.UTF_8));
+}`,
+    blanks: [
+      { id: 'socketType', answer: 'Socket', hint: 'The connected TCP endpoint from java.net.' },
+      { id: 'inputMethod', answer: 'getInputStream', hint: 'Returns the stream used to read incoming bytes.' },
+      { id: 'outputMethod', answer: 'getOutputStream', hint: 'Returns the stream used to send bytes.' }
+    ],
+    explanation: 'A connected Socket exposes an input and output stream. TCP transports an ordered byte stream and does not preserve message boundaries.'
+  }),
+  javaSnippet({
+    id: 'tcp-server',
+    topic: 'Sockets',
+    title: 'Accept a TCP connection',
+    instruction: 'Complete the listening endpoint and the blocking operation that creates a client socket.',
+    template: `try ({{serverType}} server = new {{serverType}}(8080);
+     Socket client = server.{{acceptMethod}}()) {
+    client.getOutputStream().write("ready\\n".getBytes());
+}`,
+    blanks: [
+      { id: 'serverType', answer: 'ServerSocket', hint: 'The java.net class bound to a listening TCP port.' },
+      { id: 'acceptMethod', answer: 'accept', hint: 'Blocks until a client establishes a connection.' }
+    ],
+    explanation: 'ServerSocket owns the listening port. accept() returns a separate connected Socket for one client conversation.'
+  }),
+  javaSnippet({
+    id: 'udp-receive',
+    topic: 'Sockets',
+    title: 'Receive a UDP datagram',
+    instruction: 'Fill in the UDP endpoint, packet class and receive operation.',
+    template: `byte[] buffer = new byte[1024];
+try ({{socketType}} socket = new {{socketType}}(9000)) {
+    {{packetType}} packet = new {{packetType}}(buffer, buffer.length);
+    socket.{{receiveMethod}}(packet);
+}`,
+    blanks: [
+      { id: 'socketType', answer: 'DatagramSocket', hint: 'The UDP endpoint class.' },
+      { id: 'packetType', answer: 'DatagramPacket', hint: 'Wraps the payload buffer and addressing metadata.' },
+      { id: 'receiveMethod', answer: 'receive', hint: 'Waits for one complete datagram.' }
+    ],
+    explanation: 'DatagramSocket receives independent DatagramPacket messages. UDP preserves each datagram boundary but does not guarantee delivery or ordering.'
+  }),
+  javaSnippet({
+    id: 'rmi-lookup',
+    topic: 'RMI',
+    title: 'Look up a remote service',
+    instruction: 'Complete the registry access, name lookup and remote invocation.',
+    template: `Registry registry = LocateRegistry.{{registryMethod}}("localhost", 1099);
+Calculator service = (Calculator) registry.{{lookupMethod}}("Calculator");
+int result = service.{{remoteMethod}}(2, 3);`,
+    blanks: [
+      { id: 'registryMethod', answer: 'getRegistry', hint: 'Obtains a reference to an existing RMI registry.' },
+      { id: 'lookupMethod', answer: 'lookup', hint: 'Resolves a bound service name.' },
+      { id: 'remoteMethod', answer: 'add', alternatives: ['sum'], hint: 'The example remote operation combines the two numbers.' }
+    ],
+    explanation: 'The registry maps a logical name to a remote reference. The client invokes the shared remote interface through the returned stub.'
+  }),
+  javaSnippet({
+    id: 'serialization-write',
+    topic: 'Serialization',
+    title: 'Serialize an object',
+    instruction: 'Complete the object stream and the operation that writes the object graph.',
+    template: `try ({{streamType}} out = new {{streamType}}(
+        new FileOutputStream("user.bin"))) {
+    out.{{writeMethod}}(user);
+}`,
+    blanks: [
+      { id: 'streamType', answer: 'ObjectOutputStream', hint: 'Adds Java object serialization to an output stream.' },
+      { id: 'writeMethod', answer: 'writeObject', hint: 'Serializes the supplied object graph.' }
+    ],
+    explanation: 'ObjectOutputStream writes a serializable object graph. transient instance fields and static class state are excluded from default object serialization.'
+  }),
+  javaSnippet({
+    id: 'servlet-get',
+    topic: 'Web',
+    title: 'Handle an HTTP GET request',
+    instruction: 'Complete the servlet method and response writer access.',
+    template: `@Override
+protected void {{handler}}(HttpServletRequest request,
+        HttpServletResponse response) throws IOException {
+    response.setContentType("text/plain");
+    response.{{writerMethod}}().println("Hello");
+}`,
+    blanks: [
+      { id: 'handler', answer: 'doGet', hint: 'HttpServlet dispatches GET requests to this method.' },
+      { id: 'writerMethod', answer: 'getWriter', hint: 'Returns the character writer for the response body.' }
+    ],
+    explanation: 'The servlet container dispatches a GET request to doGet(). getWriter() is used for a character response after the content type has been selected.'
+  }),
+  javaSnippet({
+    id: 'jdbc-query',
+    topic: 'JDBC',
+    title: 'Run a parameterized JDBC query',
+    instruction: 'Complete statement creation, parameter binding and query execution.',
+    template: `String sql = "SELECT name FROM users WHERE id = ?";
+try (PreparedStatement statement = connection.{{prepareMethod}}(sql)) {
+    statement.{{bindMethod}}(1, userId);
+    try (ResultSet rows = statement.{{queryMethod}}()) {
+        while (rows.next()) System.out.println(rows.getString("name"));
+    }
+}`,
+    blanks: [
+      { id: 'prepareMethod', answer: 'prepareStatement', hint: 'Creates a PreparedStatement from SQL containing placeholders.' },
+      { id: 'bindMethod', answer: 'setInt', alternatives: ['setLong'], hint: 'Binds the numeric ID to placeholder index 1.' },
+      { id: 'queryMethod', answer: 'executeQuery', hint: 'Executes SELECT and returns a ResultSet.' }
+    ],
+    explanation: 'PreparedStatement keeps parameter values separate from SQL structure. JDBC parameter indexes begin at 1, and executeQuery() returns the rows.'
+  }),
+  javaSnippet({
+    id: 'jpa-find',
+    topic: 'JPA',
+    title: 'Load and update a managed entity',
+    instruction: 'Complete the EntityManager lookup and transaction boundary.',
+    template: `EntityTransaction transaction = entityManager.{{transactionMethod}}();
+transaction.{{beginMethod}}();
+User user = entityManager.{{findMethod}}(User.class, userId);
+user.setActive(true);
+transaction.{{commitMethod}}();`,
+    blanks: [
+      { id: 'transactionMethod', answer: 'getTransaction', hint: 'Returns the resource-local transaction object.' },
+      { id: 'beginMethod', answer: 'begin', hint: 'Starts the transaction.' },
+      { id: 'findMethod', answer: 'find', hint: 'Loads an entity by class and primary key.' },
+      { id: 'commitMethod', answer: 'commit', hint: 'Completes the unit of work and makes changes durable.' }
+    ],
+    explanation: 'find() returns an entity managed by the persistence context. Dirty checking detects the state change and commit completes the transaction.'
+  }),
+  javaSnippet({
+    id: 'rest-resource',
+    topic: 'REST',
+    title: 'Define a JAX-RS resource method',
+    instruction: 'Complete the HTTP method annotation, path parameter and response builder.',
+    template: `@{{httpAnnotation}}
+@Path("/{id}")
+@Produces(MediaType.APPLICATION_JSON)
+public Response find(@PathParam("id") long id) {
+    Order order = repository.find(id);
+    return Response.{{responseMethod}}(order).build();
+}`,
+    blanks: [
+      { id: 'httpAnnotation', answer: 'GET', hint: 'The annotation for safe retrieval.' },
+      { id: 'responseMethod', answer: 'ok', hint: 'Starts a successful HTTP 200 response builder.' }
+    ],
+    explanation: '@GET maps retrieval requests to the method. @PathParam binds the URI segment, and Response.ok() creates a 200 response containing the representation.'
+  }),
+  javaSnippet({
+    id: 'jms-send',
+    topic: 'JMS',
+    title: 'Send a JMS text message',
+    instruction: 'Complete context creation, producer creation and message sending.',
+    template: `try (JMSContext context = connectionFactory.{{contextMethod}}()) {
+    JMSProducer producer = context.{{producerMethod}}();
+    TextMessage message = context.createTextMessage("ready");
+    producer.{{sendMethod}}(queue, message);
+}`,
+    blanks: [
+      { id: 'contextMethod', answer: 'createContext', hint: 'Creates the simplified JMS 2 client context.' },
+      { id: 'producerMethod', answer: 'createProducer', hint: 'Creates the object responsible for sending messages.' },
+      { id: 'sendMethod', answer: 'send', hint: 'Transfers the message to the supplied destination.' }
+    ],
+    explanation: 'JMSContext groups connection and session responsibilities. JMSProducer sends the message to a destination while the provider handles routing and delivery.'
+  })
+]);
+
 export const PRACTICE_MODES = Object.freeze([
   {
     id: 'concept-blitz',
@@ -166,6 +345,15 @@ export const PRACTICE_MODES = Object.freeze([
     subtitle: 'Sockets, RMI, REST and JMS',
     summary: 'Reconstruct the control and data flow of the communication technologies from the lecture.',
     kind: 'sequence'
+  },
+  {
+    id: 'java-lab',
+    navTitle: 'Java Lab',
+    category: 'Practice',
+    title: 'Java Lab',
+    subtitle: 'Complete the essential Java API patterns',
+    summary: 'Fill the gaps in compact Java snippets for sockets, RMI, serialization, web APIs, persistence and messaging.',
+    kind: 'code-completion'
   },
   {
     id: 'exam-mode',

@@ -1,4 +1,4 @@
-import { CLOCK_CHALLENGES, CONCEPT_QUESTIONS, MESSAGE_FLOWS } from '../content/practice.js';
+import { CLOCK_CHALLENGES, CONCEPT_QUESTIONS, JAVA_LAB_SNIPPETS, MESSAGE_FLOWS } from '../content/practice.js';
 import { mountExamMode } from './exam-mode.js';
 
 function setFeedback(element, message, state = '') {
@@ -203,9 +203,154 @@ export function mountMessageFlow({ board, controls, feedback, onComplete }) {
   render();
 }
 
+function normalizeJavaAnswer(value) {
+  return value.trim().replace(/\s+/g, '');
+}
+
+export function mountJavaLab({ board, controls, feedback, onComplete }) {
+  const document = board.ownerDocument;
+  let index = 0;
+  let solved = 0;
+  let attempts = 0;
+  let hintsUsed = 0;
+
+  function acceptedAnswers(blank) {
+    return [blank.answer, ...blank.alternatives].map(normalizeJavaAnswer);
+  }
+
+  function renderCode(snippet, code) {
+    const blanks = new Map(snippet.blanks.map(blank => [blank.id, blank]));
+    const parts = snippet.template.split(/\{\{([a-zA-Z][\w-]*)\}\}/g);
+    parts.forEach((part, partIndex) => {
+      if (partIndex % 2 === 0) {
+        code.append(document.createTextNode(part));
+        return;
+      }
+      const blank = blanks.get(part);
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'java-blank';
+      input.dataset.javaBlank = part;
+      input.autocomplete = 'off';
+      input.spellcheck = false;
+      input.setAttribute('aria-label', `${snippet.title}: ${blank.hint}`);
+      input.style.setProperty('--answer-length', String(Math.max(4, blank.answer.length)));
+      input.addEventListener('input', () => {
+        code.querySelectorAll(`[data-java-blank="${part}"]`).forEach(peer => {
+          if (peer !== input) peer.value = input.value;
+          peer.classList.remove('correct', 'incorrect');
+        });
+      });
+      code.append(input);
+    });
+  }
+
+  function render() {
+    const snippet = JAVA_LAB_SNIPPETS[index];
+    const shell = document.createElement('section');
+    shell.className = 'java-lab';
+    const heading = document.createElement('div');
+    heading.className = 'challenge-head';
+    heading.innerHTML = `<span class="topic-kicker">${snippet.topic}</span><strong>Snippet ${index + 1} / ${JAVA_LAB_SNIPPETS.length}</strong>`;
+    const title = document.createElement('h4');
+    title.className = 'java-lab-title';
+    title.textContent = snippet.title;
+    const instruction = document.createElement('p');
+    instruction.className = 'java-lab-instruction';
+    instruction.textContent = snippet.instruction;
+    const code = document.createElement('code');
+    code.className = 'java-lab-code';
+    renderCode(snippet, code);
+    shell.append(heading, title, instruction, code);
+    board.replaceChildren(shell);
+    controls.innerHTML = '<button class="btn" id="javaHint" type="button">Show hint</button><button class="btn primary" id="checkJava" type="button">Check code</button>';
+    setFeedback(feedback, 'Complete every highlighted gap, then check the snippet.');
+    controls.querySelector('#checkJava').addEventListener('click', check);
+    controls.querySelector('#javaHint').addEventListener('click', showHint);
+    code.querySelector('.java-blank')?.focus();
+  }
+
+  function uniqueInputs() {
+    const seen = new Set();
+    return [...board.querySelectorAll('[data-java-blank]')].filter(input => {
+      if (seen.has(input.dataset.javaBlank)) return false;
+      seen.add(input.dataset.javaBlank);
+      return true;
+    });
+  }
+
+  function check() {
+    attempts += 1;
+    const snippet = JAVA_LAB_SNIPPETS[index];
+    const blanks = new Map(snippet.blanks.map(blank => [blank.id, blank]));
+    const inputs = uniqueInputs();
+    const incorrect = [];
+    inputs.forEach(input => {
+      const blank = blanks.get(input.dataset.javaBlank);
+      const correct = acceptedAnswers(blank).includes(normalizeJavaAnswer(input.value));
+      board.querySelectorAll(`[data-java-blank="${blank.id}"]`).forEach(peer => {
+        peer.classList.toggle('correct', correct);
+        peer.classList.toggle('incorrect', !correct);
+      });
+      if (!correct) incorrect.push(blank);
+    });
+
+    if (incorrect.length) {
+      setFeedback(feedback, `${incorrect.length} gap${incorrect.length === 1 ? '' : 's'} still need attention. Check the highlighted API names or use a hint.`, 'bad');
+      board.querySelector('.java-blank.incorrect')?.focus();
+      return;
+    }
+
+    solved += 1;
+    board.querySelectorAll('.java-blank').forEach(input => { input.disabled = true; });
+    setFeedback(feedback, `Correct. ${snippet.explanation}`, 'good');
+    const finished = index === JAVA_LAB_SNIPPETS.length - 1;
+    controls.innerHTML = `<button class="btn primary" id="nextJavaSnippet" type="button">${finished ? 'Show result' : 'Next snippet'}</button>`;
+    controls.querySelector('#nextJavaSnippet').addEventListener('click', () => {
+      if (!finished) {
+        index += 1;
+        render();
+        return;
+      }
+      showResult();
+    });
+  }
+
+  function showHint() {
+    const snippet = JAVA_LAB_SNIPPETS[index];
+    const target = uniqueInputs().find(input => !input.value.trim() || input.classList.contains('incorrect')) || uniqueInputs()[0];
+    const blank = snippet.blanks.find(candidate => candidate.id === target.dataset.javaBlank);
+    hintsUsed += 1;
+    target.focus();
+    setFeedback(feedback, `Hint for this gap: ${blank.hint}`, 'warn');
+  }
+
+  function showResult() {
+    board.innerHTML = `
+      <div class="result-panel">
+        <span class="result-score">${solved} / ${JAVA_LAB_SNIPPETS.length}</span>
+        <h4>Java Lab complete</h4>
+        <p>You completed the essential API patterns in ${attempts} check${attempts === 1 ? '' : 's'} and used ${hintsUsed} hint${hintsUsed === 1 ? '' : 's'}.</p>
+      </div>`;
+    controls.innerHTML = '<button class="btn primary" id="restartJavaLab" type="button">Practice again</button>';
+    controls.querySelector('#restartJavaLab').addEventListener('click', () => {
+      index = 0;
+      solved = 0;
+      attempts = 0;
+      hintsUsed = 0;
+      render();
+    });
+    setFeedback(feedback, 'Round complete. Repeat the lab until the API patterns become automatic.', 'good');
+    onComplete(solved, JAVA_LAB_SNIPPETS.length);
+  }
+
+  render();
+}
+
 export const PRACTICE_RENDERERS = Object.freeze({
   'concept-blitz': mountConceptBlitz,
   'clock-lab': mountClockLab,
   'message-flow': mountMessageFlow,
+  'java-lab': mountJavaLab,
   'exam-mode': mountExamMode
 });

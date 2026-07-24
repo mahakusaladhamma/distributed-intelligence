@@ -1,6 +1,6 @@
 # Distributed Intelligence
 
-Current learning release: **v0.5 · Interactive Learning**
+Current learning release: **v0.6 · Java Lab**
 
 The interactive learning framework turns the guided theory paths into reusable course modules with contextual definitions, progressive disclosure, clickable diagrams, annotated code, embedded checks, concept links and section-level progress.
 
@@ -35,6 +35,7 @@ The initial practice lineup contains:
 - **Concept Blitz** for mixed lecture-wide comparisons with immediate explanations
 - **Clock Lab** for Cristian delay estimates, synchronization bounds, Lamport timestamps and vector-clock causality
 - **Message Flow** for reconstructing TCP, RMI, REST and JMS control/data paths
+- **Java Lab** for completing essential API snippets across sockets, RMI, serialization, servlets, REST, JDBC, JPA and JMS
 
 These modes intentionally focus on explaining concepts, tracing execution and recognizing small decisive steps in example programs.
 

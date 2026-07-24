@@ -12,7 +12,7 @@ test('application renders navigation, topic detail and progress', async () => {
   app.start();
 
   assert.equal(dom.window.document.querySelectorAll('[data-topic]').length, 14);
-  assert.equal(dom.window.document.querySelectorAll('[data-practice]').length, 4);
+  assert.equal(dom.window.document.querySelectorAll('[data-practice]').length, 5);
   assert.equal(dom.window.document.querySelectorAll('[data-glossary]').length, 1);
   assert.equal(dom.window.document.querySelector('#topicTitle').textContent, 'Distributed Systems');
   assert.equal(dom.window.document.querySelector('#topicCount').textContent, '14');
@@ -101,4 +101,30 @@ test('interactive practice modes render and accept input', async () => {
   app.selectPractice('message-flow');
   assert.equal(dom.window.document.querySelectorAll('[data-step]').length, 5);
   assert.match(dom.window.document.querySelector('#missionText').textContent, /control and data flow/);
+});
+
+test('Java Lab validates gaps, synchronizes repeated tokens and advances', async () => {
+  const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+  const dom = new JSDOM(html, { url: 'http://localhost/' });
+  const app = createApp(dom.window.document, dom.window);
+  const { document, Event } = dom.window;
+
+  app.start();
+  app.selectPractice('java-lab');
+  assert.equal(document.querySelector('#topicTitle').textContent, 'Java Lab');
+  assert.match(document.querySelector('.java-lab-title').textContent, /TCP client/i);
+
+  const socketInputs = document.querySelectorAll('[data-java-blank="socketType"]');
+  assert.equal(socketInputs.length, 2);
+  socketInputs[0].value = 'Socket';
+  socketInputs[0].dispatchEvent(new Event('input'));
+  assert.equal(socketInputs[1].value, 'Socket');
+
+  document.querySelector('[data-java-blank="inputMethod"]').value = 'getInputStream';
+  document.querySelector('[data-java-blank="outputMethod"]').value = 'getOutputStream';
+  document.querySelector('#checkJava').click();
+  assert.match(document.querySelector('#feedback').textContent, /^Correct\./);
+  assert.ok(document.querySelector('#nextJavaSnippet'));
+  document.querySelector('#nextJavaSnippet').click();
+  assert.match(document.querySelector('.java-lab-title').textContent, /Accept a TCP connection/i);
 });
