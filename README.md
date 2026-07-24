@@ -4,9 +4,8 @@ Interactive exam preparation for the Distributed Systems module.
 
 The project uses the proven foundation of Algo Arena: native JavaScript modules,
 custom responsive CSS, a manifest-driven topic registry, local progress and
-Node-based smoke tests. The initial release provides the application shell and
-the complete lecture-topic map. Interactive tutorials, code-reading exercises
-and exam tasks can be added as independent topic modules.
+Node-based smoke tests. The current release combines the complete lecture-topic
+map with interactive practice and a guided theory system.
 
 ## Run locally
 
@@ -34,3 +33,18 @@ The initial practice lineup contains:
 - **Message Flow** for reconstructing TCP, RMI, REST and JMS control/data paths
 
 These modes intentionally focus on explaining concepts, tracing execution and recognizing small decisive steps in example programs.
+
+## Guided theory
+
+Every one of the 14 lecture areas has a complete tutorial path based on the
+provided course material. Each step contains:
+
+- a focused explanation of one concept or workflow
+- formulas or concrete examples where they improve understanding
+- a source reference to the corresponding lecture PDF
+- an understanding check with immediate explanatory feedback
+- locally stored progress and a transition into related practice
+
+The content covers foundations and organization, time, sockets, RMI/CORBA,
+serialization, XML/DTD/XML Schema, web applications and servlets, JSP, SOAP
+web services, REST, JDBC, JPA and JMS.

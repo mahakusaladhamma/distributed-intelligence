@@ -3,14 +3,29 @@ import { PRACTICE_MODES } from './content/practice.js';
 import { TOPICS } from './content/topics.js';
 import { createTopicRegistry } from './core/topic-registry.js';
 import { PRACTICE_RENDERERS } from './games/practice-games.js';
+import { TUTORIALS } from './tutorials/content.js';
+import { createTutorialRegistry } from './tutorials/tutorial-registry.js';
+import { createTutorialRenderer } from './tutorials/tutorial-renderer.js';
 
 export function createApp(document, window) {
   const $ = selector => document.querySelector(selector);
   const registry = createTopicRegistry(TOPICS);
-  const defaultProgress = { visited: [], mastered: [], completedPractice: [] };
+  const tutorialRegistry = createTutorialRegistry(TUTORIALS);
+  const defaultProgress = { visited: [], mastered: [], completedPractice: [], completedTutorials: [] };
   let currentTopicId = DEFAULT_TOPIC_ID;
   let currentPracticeId = null;
   let progress = loadProgress();
+  const tutorialRenderer = createTutorialRenderer({
+    document,
+    registry: tutorialRegistry,
+    trigger: $('#tutorialBtn'),
+    panel: $('#tutorialPanel'),
+    backdrop: $('#tutorialBackdrop'),
+    closeButton: $('#tutorialClose'),
+    storage: window.localStorage,
+    onComplete: completeTutorial,
+    onPractice: selectRelatedPractice
+  });
 
   function loadProgress() {
     try {
@@ -45,7 +60,7 @@ export function createApp(document, window) {
         .filter(topic => topic.category === category)
         .map(topic => `
           <button class="algo-btn ${topic.id === currentTopicId ? 'active' : ''}" data-topic="${topic.id}">
-            <span>${topic.navTitle}</span><small>${topic.category}</small>
+            <span>${topic.navTitle}</span><small>${progress.completedTutorials.includes(topic.id) ? 'THEORY COMPLETE' : topic.category}</small>
           </button>`)
         .join('');
       return `<section class="nav-group"><div class="nav-title">${category}</div>${buttons}</section>`;
@@ -86,9 +101,9 @@ export function createApp(document, window) {
           <ul class="source-list">${topic.sources.map(source => `<li>${source}</li>`).join('')}</ul>
         </div>
         <div class="topic-card">
-          <span class="topic-kicker">Next module</span>
-          <h4>Interactive practice</h4>
-          <p>Tutorials, code-reading tasks and exam questions plug into this topic registry without changing the application shell.</p>
+          <span class="topic-kicker">Guided theory</span>
+          <h4>${tutorialRegistry.get(topic.id).steps.length} tutorial steps</h4>
+          <p>Work through the explanation, examples and understanding checks before applying the topic in interactive practice.</p>
         </div>
       </div>`;
 
@@ -100,6 +115,7 @@ export function createApp(document, window) {
     $('#feedback').textContent = mastered
       ? 'This topic is currently marked as understood.'
       : 'Read the objectives and use the marker to track your preparation.';
+    tutorialRenderer.syncTrigger(topic.id);
   }
 
   function selectTopic(id) {
@@ -125,6 +141,7 @@ export function createApp(document, window) {
     $('#mobileTopicTitle').textContent = mode.navTitle;
     $('#missionTitle').textContent = mode.navTitle;
     $('#missionText').textContent = mode.summary;
+    $('#tutorialBtn').hidden = true;
     renderNavigation();
     PRACTICE_RENDERERS[id]({
       board: $('#board'),
@@ -141,6 +158,25 @@ export function createApp(document, window) {
       saveProgress();
       renderNavigation();
     }
+  }
+
+  function completeTutorial(topicId) {
+    if (!progress.completedTutorials.includes(topicId)) {
+      progress.completedTutorials = [...progress.completedTutorials, topicId];
+      saveProgress();
+      renderNavigation();
+    }
+  }
+
+  function selectRelatedPractice(topicId) {
+    const mapping = {
+      time: 'clock-lab',
+      sockets: 'message-flow',
+      rmi: 'message-flow',
+      rest: 'message-flow',
+      jms: 'message-flow'
+    };
+    selectPractice(mapping[topicId] || 'concept-blitz');
   }
 
   function toggleMastery(id) {
@@ -169,11 +205,14 @@ export function createApp(document, window) {
     $('#menuBtn').addEventListener('click', openMenu);
     $('#closeMenuBtn').addEventListener('click', closeMenu);
     $('#navBackdrop').addEventListener('click', closeMenu);
+    $('#tutorialBtn').addEventListener('click', () => {
+      if (currentTopicId) tutorialRenderer.open(currentTopicId);
+    });
     renderStats();
     selectTopic(DEFAULT_TOPIC_ID);
   }
 
-  return Object.freeze({ start, selectTopic, selectPractice, registry });
+  return Object.freeze({ start, selectTopic, selectPractice, registry, tutorialRegistry, tutorialRenderer });
 }
 
 if (typeof document !== 'undefined' && typeof window !== 'undefined') {
