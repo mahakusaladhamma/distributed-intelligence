@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { CLOCK_CHALLENGES, CONCEPT_QUESTIONS, MESSAGE_FLOWS, PRACTICE_MODES } from '../src/content/practice.js';
 
 test('initial practice lineup has valid answer keys and flows', () => {
-  assert.deepEqual(PRACTICE_MODES.map(mode => mode.id), ['concept-blitz', 'clock-lab', 'message-flow']);
+  assert.deepEqual(PRACTICE_MODES.map(mode => mode.id), ['concept-blitz', 'clock-lab', 'message-flow', 'exam-mode']);
   assert.ok(CONCEPT_QUESTIONS.length >= 10);
   assert.ok(CLOCK_CHALLENGES.some(challenge => challenge.type === 'Cristian'));
   assert.ok(CLOCK_CHALLENGES.some(challenge => challenge.type === 'Vector clock'));

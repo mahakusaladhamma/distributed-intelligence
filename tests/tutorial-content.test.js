@@ -19,8 +19,16 @@ test('every course topic has a complete guided tutorial', () => {
     for (const step of tutorial.steps) {
       assert.ok(step.source.includes('.pdf'));
       assert.ok(step.paragraphs.length >= 2);
-      assert.ok(step.check.options.length >= 3);
-      assert.ok(step.check.answer >= 0 && step.check.answer < step.check.options.length);
+      if (step.check.type === 'order') {
+        assert.ok(step.check.items.length >= 3);
+        assert.deepEqual([...step.check.answer].sort(), [...step.check.items].sort());
+      } else if (step.check.type === 'boolean') {
+        assert.equal(step.check.options.length, 2);
+        assert.ok(step.check.answer === 0 || step.check.answer === 1);
+      } else {
+        assert.ok(step.check.options.length >= 3);
+        assert.ok(step.check.answer >= 0 && step.check.answer < step.check.options.length);
+      }
       assert.ok(step.check.explanation.length >= 20);
     }
   }

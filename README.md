@@ -1,8 +1,8 @@
 # Distributed Intelligence
 
-Current learning release: **v0.4 · Exam Mode**
+Current learning release: **v0.5 · Interactive Learning**
 
-The exam mode combines theory questions, Java code completion, TCP/UDP and HTTP request analysis, and XML validation against a supplied DTD in a timed 90-minute attempt. Answers remain revisable until submission; afterwards, the app provides a point-based review with model explanations.
+The interactive learning framework turns the guided theory paths into reusable course modules with contextual definitions, progressive disclosure, clickable diagrams, annotated code, embedded checks, concept links and section-level progress.
 
 Interactive exam preparation for the Distributed Systems module.
 
@@ -52,3 +52,18 @@ provided course material. Each step contains:
 The content covers foundations and organization, time, sockets, RMI/CORBA,
 serialization, XML/DTD/XML Schema, web applications and servlets, JSP, SOAP
 web services, REST, JDBC, JPA and JMS.
+
+## Interactive learning framework
+
+Tutorial content stays declarative while the shared renderer supplies:
+
+- automatic glossary highlighting with compact definitions and related concepts
+- expandable deep dives, exam tips, common mistakes and memory callouts
+- clickable diagrams with relationship and message-flow highlighting
+- token-level explanations for Java and protocol examples
+- multiple-choice and ordering checks with immediate explanatory feedback
+- per-step `Not Started`, `Reading` and `Completed` state plus review markers
+
+The initial enhanced examples cover Cristian synchronization, socket addressing
+and server code, RMI invocation flow, REST requests and JMS queue delivery. Every
+tutorial receives automatic glossary support and concept linking.

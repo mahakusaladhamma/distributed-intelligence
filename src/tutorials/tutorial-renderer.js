@@ -1,11 +1,16 @@
-const STORAGE_KEY = 'distributedIntelligenceTutorialProgress';
-
-function element(document, tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text !== undefined) node.textContent = text;
-  return node;
-}
+import {
+  CodeTooltip,
+  collectRelatedConcepts,
+  DefinitionPopover,
+  element,
+  ExamTip,
+  ExpandableSection,
+  InteractiveDiagram,
+  KnowledgeCheck,
+  ProgressTracker,
+  RelatedConcepts,
+  appendGlossaryText
+} from '../learning/components.js';
 
 export function createTutorialRenderer({
   document,
@@ -26,6 +31,10 @@ export function createTutorialRenderer({
   const previousButton = panel.querySelector('#tutorialPrevious');
   const nextButton = panel.querySelector('#tutorialNext');
   const practiceButton = panel.querySelector('#tutorialPractice');
+  const tracker = new ProgressTracker(storage);
+  const popover = DefinitionPopover(document, {
+    onLearnMore: entry => open(entry.topicId)
+  });
 
   let activeTopicId = null;
   let index = 0;
@@ -33,79 +42,77 @@ export function createTutorialRenderer({
   let checkSolved = false;
 
   function readProgress() {
-    try {
-      return JSON.parse(storage.getItem(STORAGE_KEY) || '{}');
-    } catch (_) {
-      return {};
-    }
-  }
-
-  function writeProgress(topicId, value) {
-    const progress = readProgress();
-    progress[topicId] = value;
-    try {
-      storage.setItem(STORAGE_KEY, JSON.stringify(progress));
-    } catch (_) {
-      // Restricted previews may deny storage; the tutorial remains usable.
-    }
+    return tracker.readAll();
   }
 
   function currentProgress() {
-    return readProgress()[activeTopicId] || { step: 0, completed: false };
+    return tracker.get(activeTopicId);
   }
 
-  function setOpen(open) {
-    document.body.classList.toggle('tutorial-open', open);
-    panel.classList.toggle('open', open);
-    panel.setAttribute('aria-hidden', String(!open));
-    backdrop.classList.toggle('show', open);
-    trigger.setAttribute('aria-expanded', String(open));
-    document.querySelector('.app')?.toggleAttribute('inert', open);
-    document.querySelector('.mobile-header')?.toggleAttribute('inert', open);
-    if (open) closeButton.focus({ preventScroll: true });
-    else returnFocus?.focus?.({ preventScroll: true });
-  }
-
-  function answerCheck(step, optionIndex, optionButton, options, result) {
-    if (checkSolved) return;
-    if (optionIndex !== step.check.answer) {
-      optionButton.classList.add('incorrect');
-      result.className = 'tutorial-check-result bad';
-      result.textContent = 'Not yet. Re-read the explanation and try another answer.';
-      return;
+  function setOpen(openState) {
+    document.body.classList.toggle('tutorial-open', openState);
+    panel.classList.toggle('open', openState);
+    panel.setAttribute('aria-hidden', String(!openState));
+    backdrop.classList.toggle('show', openState);
+    trigger.setAttribute('aria-expanded', String(openState));
+    document.querySelector('.app')?.toggleAttribute('inert', openState);
+    document.querySelector('.mobile-header')?.toggleAttribute('inert', openState);
+    if (openState) closeButton.focus({ preventScroll: true });
+    else {
+      popover.close();
+      returnFocus?.focus?.({ preventScroll: true });
     }
+  }
 
+  function completeCheck(step) {
+    if (checkSolved) return;
     checkSolved = true;
-    options.querySelectorAll('button').forEach(button => {
-      button.disabled = true;
-      if (Number(button.dataset.tutorialAnswer) === step.check.answer) button.classList.add('correct');
-    });
-    result.className = 'tutorial-check-result good';
-    result.textContent = step.check.explanation;
-
     const tutorial = registry.get(activeTopicId);
-    const previous = currentProgress();
-    const completed = index === tutorial.steps.length - 1;
-    const nextStep = Math.min(tutorial.steps.length - 1, index + 1);
-    writeProgress(activeTopicId, {
-      step: completed ? index : Math.max(previous.step || 0, nextStep),
-      completed
-    });
+    const tutorialComplete = index === tutorial.steps.length - 1;
+    tracker.complete(
+      activeTopicId,
+      step.id,
+      tutorialComplete ? index : Math.max(currentProgress().step || 0, index + 1),
+      tutorialComplete
+    );
     nextButton.disabled = false;
-    practiceButton.hidden = !completed;
+    practiceButton.hidden = !tutorialComplete;
     syncTrigger(activeTopicId);
-    if (completed) onComplete(activeTopicId);
+    renderStepMeta(step);
+    if (tutorialComplete) onComplete(activeTopicId);
+  }
+
+  function renderStepMeta(step) {
+    const oldMeta = body.querySelector('.tutorial-step-meta');
+    const meta = element(document, 'div', 'tutorial-step-meta');
+    const status = element(document, 'span', `step-status ${tracker.status(activeTopicId, step.id).toLowerCase().replace(' ', '-')}`, tracker.status(activeTopicId, step.id));
+    const review = element(
+      document,
+      'button',
+      'review-toggle',
+      (currentProgress().reviewSteps || []).includes(step.id) ? 'Marked for review' : 'Review later'
+    );
+    review.type = 'button';
+    review.dataset.reviewStep = step.id;
+    review.setAttribute('aria-pressed', String((currentProgress().reviewSteps || []).includes(step.id)));
+    review.addEventListener('click', () => {
+      tracker.toggleReview(activeTopicId, step.id);
+      renderStepMeta(step);
+    });
+    meta.append(status, review);
+    if (oldMeta) oldMeta.replaceWith(meta);
+    else body.querySelector('.tutorial-step')?.prepend(meta);
   }
 
   function render() {
     const tutorial = registry.get(activeTopicId);
     const step = tutorial.steps[index];
-    const progress = currentProgress();
-    checkSolved = progress.completed || index < (progress.step || 0);
+    const progress = tracker.start(activeTopicId, step.id);
+    checkSolved = progress.completed || (progress.completedSteps || []).includes(step.id) || index < (progress.step || 0);
 
     title.textContent = tutorial.title;
     description.textContent = tutorial.description;
-    progressText.textContent = `Step ${index + 1} of ${tutorial.steps.length}`;
+    progressText.textContent = `Step ${index + 1} of ${tutorial.steps.length} · ${tracker.status(activeTopicId, step.id)}`;
     progressBar.style.width = `${((index + 1) / tutorial.steps.length) * 100}%`;
     body.replaceChildren();
 
@@ -114,41 +121,37 @@ export function createTutorialRenderer({
       element(document, 'span', 'tutorial-source', step.source),
       element(document, 'h3', '', step.title)
     );
-    step.paragraphs.forEach(paragraph => article.append(element(document, 'p', '', paragraph)));
+    step.paragraphs.forEach(paragraph => {
+      const node = element(document, 'p');
+      appendGlossaryText(document, node, paragraph, popover);
+      article.append(node);
+    });
     if (step.formula) article.append(element(document, 'div', 'tutorial-formula', step.formula));
     if (step.example) {
       const example = element(document, 'div', 'tutorial-example');
-      example.append(element(document, 'strong', '', 'Example'), element(document, 'p', '', step.example));
+      const text = element(document, 'p');
+      appendGlossaryText(document, text, step.example, popover);
+      example.append(element(document, 'strong', '', 'Practical example'), text);
       article.append(example);
     }
+    if (step.diagram) article.append(InteractiveDiagram(document, step.diagram));
+    if (step.code) article.append(CodeTooltip(document, step.code));
+    (step.sections || []).forEach(section => article.append(ExpandableSection(document, section, popover)));
+    (step.callouts || []).forEach(callout => article.append(ExamTip(document, callout)));
 
-    const checkSection = element(document, 'section', 'tutorial-check');
-    checkSection.append(
-      element(document, 'strong', '', 'Understanding check'),
-      element(document, 'p', '', step.check.prompt)
-    );
-    const options = element(document, 'div', 'tutorial-check-options');
-    const result = element(
-      document,
-      'div',
-      `tutorial-check-result${checkSolved ? ' good' : ''}`,
-      checkSolved ? step.check.explanation : 'Choose an answer.'
-    );
+    const related = collectRelatedConcepts([
+      step.title,
+      ...step.paragraphs,
+      step.example || ''
+    ]);
+    if (related.length) article.append(RelatedConcepts(document, related, entry => open(entry.topicId)));
 
-    step.check.options.forEach((option, optionIndex) => {
-      const button = element(document, 'button', 'tutorial-check-option', option);
-      button.type = 'button';
-      button.dataset.tutorialAnswer = String(optionIndex);
-      if (checkSolved) {
-        button.disabled = true;
-        if (optionIndex === step.check.answer) button.classList.add('correct');
-      }
-      button.addEventListener('click', () => answerCheck(step, optionIndex, button, options, result));
-      options.append(button);
-    });
-    checkSection.append(options, result);
-    article.append(checkSection);
+    article.append(KnowledgeCheck(document, step.check, {
+      solved: checkSolved,
+      onSolved: () => completeCheck(step)
+    }));
     body.append(article);
+    renderStepMeta(step);
 
     previousButton.disabled = index === 0;
     nextButton.hidden = index === tutorial.steps.length - 1;
@@ -158,11 +161,11 @@ export function createTutorialRenderer({
 
   function open(topicId) {
     if (!registry.has(topicId)) return;
+    if (!panel.classList.contains('open')) returnFocus = document.activeElement;
     activeTopicId = topicId;
     const tutorial = registry.get(topicId);
-    const progress = readProgress()[topicId] || { step: 0, completed: false };
+    const progress = tracker.get(topicId);
     index = Math.min(progress.step || 0, tutorial.steps.length - 1);
-    returnFocus = document.activeElement;
     render();
     setOpen(true);
   }
@@ -177,10 +180,14 @@ export function createTutorialRenderer({
     trigger.disabled = !available;
     if (!available) return;
     const tutorial = registry.get(topicId);
-    const progress = readProgress()[topicId] || { step: 0, completed: false };
-    trigger.textContent = progress.completed
-      ? 'Tutorial complete'
-      : `Open tutorial · ${Math.min((progress.step || 0) + 1, tutorial.steps.length)}/${tutorial.steps.length}`;
+    const progress = tracker.get(topicId);
+    if (progress.completed) {
+      trigger.textContent = 'Tutorial complete';
+    } else if (progress.started) {
+      trigger.textContent = `Continue tutorial · ${Math.min((progress.step || 0) + 1, tutorial.steps.length)}/${tutorial.steps.length}`;
+    } else {
+      trigger.textContent = `Open tutorial · 1/${tutorial.steps.length}`;
+    }
   }
 
   previousButton.addEventListener('click', () => {
@@ -208,7 +215,7 @@ export function createTutorialRenderer({
       return;
     }
     if (event.key !== 'Tab') return;
-    const focusable = [...panel.querySelectorAll('button:not([disabled]):not([hidden])')];
+    const focusable = [...panel.querySelectorAll('button:not([disabled]):not([hidden]), summary')];
     if (!focusable.length) return;
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
@@ -221,5 +228,5 @@ export function createTutorialRenderer({
     }
   });
 
-  return Object.freeze({ open, close, syncTrigger, readProgress });
+  return Object.freeze({ open, close, syncTrigger, readProgress, tracker });
 }

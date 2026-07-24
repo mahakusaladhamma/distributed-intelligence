@@ -1,8 +1,9 @@
 import { defineTutorials } from './define-tutorials.js';
+import { enhanceTutorials } from './enhancements.js';
 
 const check = (prompt, options, answer, explanation) => ({ prompt, options, answer, explanation });
 
-export const TUTORIALS = defineTutorials([
+export const TUTORIALS = defineTutorials(enhanceTutorials([
   {
     topicId: 'overview',
     title: 'Distributed systems from first principles',
@@ -592,4 +593,4 @@ export const TUTORIALS = defineTutorials([
       }
     ]
   }
-]);
+]));
