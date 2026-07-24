@@ -1,5 +1,9 @@
 # Distributed Intelligence
 
+Current learning release: **v0.4 · Exam Mode**
+
+The exam mode combines theory questions, Java code completion, TCP/UDP and HTTP request analysis, and XML validation against a supplied DTD in a timed 90-minute attempt. Answers remain revisable until submission; afterwards, the app provides a point-based review with model explanations.
+
 Interactive exam preparation for the Distributed Systems module.
 
 The project uses the proven foundation of Algo Arena: native JavaScript modules,
