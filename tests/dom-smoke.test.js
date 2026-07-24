@@ -24,8 +24,11 @@ test('application renders navigation, topic detail and progress', async () => {
   assert.equal(dom.window.document.querySelector('#tutorialPanel').classList.contains('open'), true);
   assert.match(dom.window.document.querySelector('#tutorialTitle').textContent, /JMS|messaging/i);
   assert.equal(dom.window.document.querySelectorAll('[data-tutorial-answer]').length, 3);
+  assert.ok(dom.window.document.querySelectorAll('[data-glossary-id]').length >= 1);
+  assert.equal(dom.window.document.querySelector('.step-status').textContent, 'Reading');
   dom.window.document.querySelector('[data-tutorial-answer="0"]').click();
   assert.equal(dom.window.document.querySelector('#tutorialNext').disabled, false);
+  assert.equal(dom.window.document.querySelector('.step-status').textContent, 'Completed');
 });
 
 test('exam mode starts, stores answers and navigates between tasks', async () => {
