@@ -1,4 +1,5 @@
 import { CLOCK_CHALLENGES, CONCEPT_QUESTIONS, MESSAGE_FLOWS } from '../content/practice.js';
+import { mountExamMode } from './exam-mode.js';
 
 function setFeedback(element, message, state = '') {
   element.className = `feedback ${state}`.trim();
@@ -205,5 +206,6 @@ export function mountMessageFlow({ board, controls, feedback, onComplete }) {
 export const PRACTICE_RENDERERS = Object.freeze({
   'concept-blitz': mountConceptBlitz,
   'clock-lab': mountClockLab,
-  'message-flow': mountMessageFlow
+  'message-flow': mountMessageFlow,
+  'exam-mode': mountExamMode
 });
