@@ -15,10 +15,17 @@ test('application renders navigation, topic detail and progress', async () => {
   assert.equal(dom.window.document.querySelectorAll('[data-practice]').length, 3);
   assert.equal(dom.window.document.querySelector('#topicTitle').textContent, 'Distributed Systems');
   assert.equal(dom.window.document.querySelector('#topicCount').textContent, '14');
+  assert.equal(app.tutorialRegistry.all().length, 14);
 
   app.selectTopic('jms');
   assert.equal(dom.window.document.querySelector('#topicTitle').textContent, 'Java Message Service');
   assert.equal(dom.window.document.querySelector('#visitedCount').textContent, '2');
+  dom.window.document.querySelector('#tutorialBtn').click();
+  assert.equal(dom.window.document.querySelector('#tutorialPanel').classList.contains('open'), true);
+  assert.match(dom.window.document.querySelector('#tutorialTitle').textContent, /JMS|messaging/i);
+  assert.equal(dom.window.document.querySelectorAll('[data-tutorial-answer]').length, 3);
+  dom.window.document.querySelector('[data-tutorial-answer="0"]').click();
+  assert.equal(dom.window.document.querySelector('#tutorialNext').disabled, false);
 });
 
 test('interactive practice modes render and accept input', async () => {
